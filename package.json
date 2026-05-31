@@ -1,0 +1,30 @@
+{
+  "name": "dymoprintserver",
+  "version": "1.0.0",
+  "description": "Local-first Dymo LabelManager PnP print server (REST API + Web UI)",
+  "main": "src/index.js",
+  "scripts": {
+    "setup:local": "bash ./scripts/setup-local.sh",
+    "start:local": "PORT=3000 DYMOPRINT_BIN=.venv/bin/dymoprint node src/index.js",
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-validator": "^7.2.0",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/<YOUR_USER>/dymoprintserver.git"
+  },
+  "bugs": {
+    "url": "https://github.com/<YOUR_USER>/dymoprintserver/issues"
+  },
+  "homepage": "https://github.com/<YOUR_USER>/dymoprintserver#readme"
+  }
+}

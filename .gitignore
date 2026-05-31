@@ -1,0 +1,17 @@
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+
+# Runtime
+*.log
+.tmp/

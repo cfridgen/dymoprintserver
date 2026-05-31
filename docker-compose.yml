@@ -1,0 +1,21 @@
+services:
+  dymo-server:
+    build: .
+    container_name: dymo-labelmanager
+    ports:
+      - "3000:3000"
+    # USB-Zugriff: gesamten USB-Bus einbinden
+    # Alternativ nur das spezifische Gerät: /dev/bus/usb/001/003:/dev/bus/usb/001/003
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    devices:
+      - /dev/bus/usb
+    privileged: true        # Nötig für direkten USB-Zugriff im Container
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      # Dymo LabelManager PnP USB-IDs (Standard)
+      - DYMO_VENDOR_ID=0x0922
+      # Tape-Standardbreite in mm (6, 9, 12, 19, 24)
+      - DYMO_TAPE_SIZE=12
+    restart: unless-stopped

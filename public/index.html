@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dymo LabelManager Server</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; }
+    header p { color: #666; margin-top: 4px; }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      font-size: 0.9rem;
+    }
+    .status-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+    .dot.ok { background: #22c55e; }
+    .dot.err { background: #ef4444; }
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .mini-btn {
+      padding: 7px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .mini-btn:hover { background: #f8fafc; }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #dde;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .tab-btn.active { background: #3b82f6; color: #fff; }
+
+    .panel {
+      display: none;
+      max-width: 520px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 14px;
+      padding: 28px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+    }
+    .panel.active { display: block; }
+
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; margin-top: 16px; }
+    label:first-child { margin-top: 0; }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .row { display: flex; gap: 12px; }
+    .row > div { flex: 1; }
+
+    button[type="submit"] {
+      margin-top: 20px;
+      width: 100%;
+      padding: 11px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button[type="submit"]:hover { background: #2563eb; }
+    button[type="submit"]:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #1e293b;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+      z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.error { background: #dc2626; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏷️ Dymo LabelManager Server</h1>
+  <p>Druckserver für Dymo LabelManager PnP</p>
+</header>
+
+<div class="status-wrap">
+  <div class="status-bar">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">Verbinde…</span>
+  </div>
+  <div class="quick-actions">
+    <button class="mini-btn" type="button" onclick="checkStatus()">Status prüfen</button>
+    <button class="mini-btn" type="button" onclick="printShortTest()">Massband-Test 90mm</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab(event, 'text')">Text</button>
+  <button class="tab-btn" onclick="showTab(event, 'qr')">QR-Code</button>
+  <button class="tab-btn" onclick="showTab(event, 'barcode')">Barcode</button>
+</div>
+
+<!-- TEXT -->
+<div class="panel active" id="panel-text">
+  <form onsubmit="submitForm(event, '/api/print/text', getTextPayload)">
+    <label for="text">Labeltext (mehrere Zeilen möglich)</label>
+    <textarea id="text" placeholder="Zeile 1&#10;Zeile 2&#10;Zeile 3" required></textarea>
+
+    <div class="row">
+      <div>
+        <label for="text-tape">Bandbreite (mm)</label>
+        <select id="text-tape">
+          <option value="6">6 mm</option>
+          <option value="9">9 mm</option>
+          <option value="12" selected>12 mm</option>
+          <option value="19">19 mm</option>
+          <option value="24">24 mm</option>
+        </select>
+      </div>
+      <div>
+        <label for="text-font">Schriftgröße</label>
+        <select id="text-font">
+          <option value="">Auto</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+          <option value="10" selected>10</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="18">18</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit">🖨️ Drucken</button>
+  </form>
+</div>
+
+<!-- QR -->
+<div class="panel" id="panel-qr">
+  <form onsubmit="submitForm(event, '/api/print/qr', getQRPayload)">
+    <label for="qr-content">QR-Code Inhalt (URL, Text, …)</label>
+    <input id="qr-content" type="text" placeholder="https://example.com" required />
+
+    <label for="qr-label">Beschriftung unter dem QR-Code (optional)</label>
+    <input id="qr-label" type="text" placeholder="Mein Label" />
+
+    <label for="qr-tape">Bandbreite (mm)</label>
+    <select id="qr-tape">
+      <option value="9">9 mm</option>
+      <option value="12" selected>12 mm</option>
+      <option value="19">19 mm</option>
+      <option value="24">24 mm</option>
+    </select>
+
+    <button type="submit">🖨️ Drucken</button>
+  </form>
+</div>
+
+<!-- BARCODE -->
+<div class="panel" id="panel-barcode">
+  <form onsubmit="submitForm(event, '/api/print/barcode', getBarcodePayload)">
+    <label for="barcode-value">Barcode-Wert (Code128)</label>
+    <input id="barcode-value" type="text" placeholder="123456789" required />
+
+    <label for="barcode-label">Beschriftung unter dem Barcode (optional)</label>
+    <input id="barcode-label" type="text" placeholder="Artikel-Nr." />
+
+    <label for="barcode-tape">Bandbreite (mm)</label>
+    <select id="barcode-tape">
+      <option value="9">9 mm</option>
+      <option value="12" selected>12 mm</option>
+      <option value="19">19 mm</option>
+      <option value="24">24 mm</option>
+    </select>
+
+    <button type="submit">🖨️ Drucken</button>
+  </form>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // --- Tab-Steuerung ---
+  function showTab(evt, name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    evt.target.classList.add('active');
+  }
+
+  // --- Status-Check beim Laden ---
+  async function checkStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      const dot = document.getElementById('statusDot');
+      const txt = document.getElementById('statusText');
+      if (data.available) {
+        dot.className = 'dot ok';
+        txt.textContent = 'dymoprint verfügbar – bereit';
+      } else {
+        dot.className = 'dot err';
+        txt.textContent = 'dymoprint nicht erreichbar: ' + (data.error || '');
+      }
+    } catch {
+      document.getElementById('statusDot').className = 'dot err';
+      document.getElementById('statusText').textContent = 'Server nicht erreichbar';
+    }
+  }
+
+  // --- Toast-Meldung ---
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { t.className = 'toast'; }, 3500);
+  }
+
+  // --- Payload-Builder ---
+  function getTextPayload() {
+    return {
+      text: document.getElementById('text').value,
+      tapeSize: parseInt(document.getElementById('text-tape').value),
+      fontSize: document.getElementById('text-font').value
+        ? parseInt(document.getElementById('text-font').value)
+        : undefined,
+    };
+  }
+  function getQRPayload() {
+    return {
+      qrContent: document.getElementById('qr-content').value,
+      label: document.getElementById('qr-label').value || undefined,
+      tapeSize: parseInt(document.getElementById('qr-tape').value),
+    };
+  }
+  function getBarcodePayload() {
+    return {
+      barcodeValue: document.getElementById('barcode-value').value,
+      label: document.getElementById('barcode-label').value || undefined,
+      tapeSize: parseInt(document.getElementById('barcode-tape').value),
+    };
+  }
+
+  // --- Formular absenden ---
+  async function submitForm(event, endpoint, payloadFn) {
+    event.preventDefault();
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Druckt…';
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadFn()),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ ' + data.message);
+      } else {
+        const errMsg = data.errors
+          ? data.errors.map(e => e.msg).join(', ')
+          : (data.error || 'Fehler');
+        showToast('❌ ' + errMsg, true);
+      }
+    } catch (err) {
+      showToast('❌ Netzwerkfehler: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🖨️ Drucken';
+    }
+  }
+
+  // --- Extra kurzer Testdruck ---
+  async function printShortTest() {
+    try {
+      const res = await fetch('/api/print/test-short', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tapeSize: 12 }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ ' + data.message);
+      } else {
+        showToast('❌ ' + (data.error || 'Kurztest fehlgeschlagen'), true);
+      }
+    } catch (err) {
+      showToast('❌ Netzwerkfehler: ' + err.message, true);
+    }
+  }
+
+  checkStatus();
+</script>
+</body>
+</html>

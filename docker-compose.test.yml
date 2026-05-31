@@ -1,0 +1,17 @@
+services:
+  dymo-server:
+    image: dymo-labelmanager-server:test-latest
+    container_name: dymo-labelmanager-test
+    ports:
+      - "8201:3000"
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    devices:
+      - /dev/bus/usb
+    privileged: true
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - DYMO_TAPE_SIZE=12
+      - DYMOPRINT_BIN=/opt/dymo-venv/bin/dymoprint
+    restart: unless-stopped

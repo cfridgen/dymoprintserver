@@ -1,6 +1,6 @@
 {
   "name": "dymoprintserver",
-  "version": "1.0.1",
+  "version": "1.5.0-dev.0",
   "description": "Local-first Dymo LabelManager PnP print server (REST API + Web UI)",
   "main": "src/index.js",
   "scripts": {

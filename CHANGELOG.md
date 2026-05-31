@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0-dev.0 - Unreleased
+
+### Planned
+- Next feature cycle starts here
+
 ## 1.0.1 - 2026-05-31
 
 ### Changed

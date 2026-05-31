@@ -21,7 +21,7 @@ const PYTHON_CANDIDATES = [
 ].filter(Boolean);
 
 const RULER_SCRIPT = path.join(process.cwd(), 'scripts', 'generate_ruler_label.py');
-const FIXED_LABEL_SCRIPT = path.join(process.cwd(), 'scripts', 'generate_fixed_label.py');
+const COMPOSED_LABEL_SCRIPT = path.join(process.cwd(), 'scripts', 'render_composed_label.py');
 const TAPE_SIZE = process.env.DYMO_TAPE_SIZE || '12';
 const LEADING_BLANK_MM = Number(process.env.DYMO_LEADING_BLANK_MM || '12');
 const TOTAL_LABEL_MM = Number(process.env.DYMO_TOTAL_LABEL_MM || '40');
@@ -98,7 +98,27 @@ async function runPython(args) {
  */
 async function printText(text, opts = {}) {
   const tapeSize = opts.tapeSize || TAPE_SIZE;
-  return printFixedLabel('text', { text }, tapeSize);
+  return printComposition(
+    {
+      template: opts.template || 'blank',
+      objects: [
+        {
+          type: 'text',
+          text,
+          x: 4,
+          y: 12,
+          w: 92,
+          h: 62,
+          fontFamily: opts.fontFamily || 'sans-bold',
+          fontSize: opts.fontSize || 18,
+          align: opts.align || 'center',
+          border: Boolean(opts.frame),
+          underline: Boolean(opts.underline),
+        },
+      ],
+    },
+    tapeSize
+  );
 }
 
 /**
@@ -109,7 +129,26 @@ async function printText(text, opts = {}) {
  */
 async function printQR(qrContent, label, opts = {}) {
   const tapeSize = opts.tapeSize || TAPE_SIZE;
-  return printFixedLabel('qr', { qrContent, label: label || '' }, tapeSize);
+  return printComposition(
+    {
+      template: opts.template || 'blank',
+      objects: [
+        { type: 'qr', x: 4, y: 6, w: 32, h: 88, value: qrContent, mode: opts.qrMode || 'text' },
+        {
+          type: 'text',
+          text: label || qrContent,
+          x: 40,
+          y: 12,
+          w: 56,
+          h: 64,
+          fontFamily: 'sans-bold',
+          fontSize: 12,
+          align: 'left',
+        },
+      ],
+    },
+    tapeSize
+  );
 }
 
 /**
@@ -120,17 +159,44 @@ async function printQR(qrContent, label, opts = {}) {
  */
 async function printBarcode(barcodeValue, label, opts = {}) {
   const tapeSize = opts.tapeSize || TAPE_SIZE;
-  return printFixedLabel('barcode', { barcodeValue, label: label || '' }, tapeSize);
+  return printComposition(
+    {
+      template: opts.template || 'inventory',
+      objects: [
+        {
+          type: 'barcode',
+          x: 4,
+          y: 26,
+          w: 92,
+          h: 44,
+          value: barcodeValue,
+          symbology: opts.symbology || 'code128',
+          showText: Boolean(opts.showText),
+        },
+        {
+          type: 'text',
+          text: label || barcodeValue,
+          x: 4,
+          y: 72,
+          w: 92,
+          h: 18,
+          fontFamily: 'sans',
+          fontSize: 10,
+          align: 'center',
+        },
+      ],
+    },
+    tapeSize
+  );
 }
 
-async function printFixedLabel(mode, payload, tapeSize) {
-  const tempFile = path.join(os.tmpdir(), `dymo-fixed-${mode}-${Date.now()}.png`);
+async function printComposition(payload, tapeSize = TAPE_SIZE) {
+  const tempFile = path.join(os.tmpdir(), `dymo-compose-${Date.now()}.png`);
 
   try {
     await runPython([
-      FIXED_LABEL_SCRIPT,
+      COMPOSED_LABEL_SCRIPT,
       tempFile,
-      mode,
       JSON.stringify(payload),
       String(CONTENT_LABEL_MM),
       String(tapeSize),
@@ -191,4 +257,4 @@ async function getStatus() {
   };
 }
 
-module.exports = { printText, printQR, printBarcode, printRulerTest, getStatus };
+module.exports = { printText, printQR, printBarcode, printComposition, printRulerTest, getStatus };

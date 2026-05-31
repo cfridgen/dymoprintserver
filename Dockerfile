@@ -18,7 +18,10 @@ RUN python3 -m venv /opt/dymo-venv \
     && /opt/dymo-venv/bin/pip install --no-cache-dir \
         dymoprint==2.3.0 \
         Pillow \
-        qrcode
+        qrcode \
+        pdf417gen \
+        pystrich \
+    && /opt/dymo-venv/bin/pip install --no-cache-dir --force-reinstall 'Pillow<11,>=10.4.0'
 
 ENV PATH="/opt/dymo-venv/bin:$PATH"
 
@@ -34,6 +37,7 @@ RUN npm ci --only=production
 # Anwendungscode kopieren
 COPY src/ ./src/
 COPY public/ ./public/
+COPY scripts/ ./scripts/
 
 EXPOSE 3000
 

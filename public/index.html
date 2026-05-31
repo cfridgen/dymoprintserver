@@ -3,360 +3,956 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dymo LabelManager Server</title>
+  <title>Dymo Print Server</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f3efe6;
+      --panel: #fffdf8;
+      --ink: #14110f;
+      --muted: #6b625d;
+      --line: #d8cfc5;
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --danger: #b42318;
+      --shadow: 0 24px 60px rgba(20, 17, 15, 0.12);
+    }
+
+    * { box-sizing: border-box; }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f0f2f5;
-      color: #222;
+      margin: 0;
       min-height: 100vh;
-      padding: 24px 16px;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 32%),
+        linear-gradient(180deg, #fbf7ef 0%, var(--bg) 100%);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      padding: 24px 16px 56px;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 32px;
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
     }
-    header h1 { font-size: 1.6rem; font-weight: 700; }
-    header p { color: #666; margin-top: 4px; }
 
-    .status-bar {
-      display: flex;
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .hero-card,
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(20, 17, 15, 0.08);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -40px auto;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(15, 118, 110, 0.18), transparent 68%);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      line-height: 0.95;
+      margin-bottom: 10px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
-      margin-bottom: 28px;
-      font-size: 0.9rem;
+      margin-bottom: 16px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(20, 17, 15, 0.06);
+      color: var(--muted);
+      font: 600 0.78rem/1.2 Arial, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
     }
-    .status-wrap {
+
+    .hero-copy {
+      max-width: 42rem;
+      color: var(--muted);
+      font: 500 1rem/1.65 Arial, sans-serif;
+    }
+
+    .status-stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      padding: 24px;
+    }
+
+    .status-chip {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #f8f3eb;
+      border: 1px solid rgba(20, 17, 15, 0.06);
+      font: 600 0.95rem/1.4 Arial, sans-serif;
     }
+
     .dot {
-      width: 10px; height: 10px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      background: #ccc;
+      background: #c3b8ab;
+      flex: 0 0 12px;
     }
-    .dot.ok { background: #22c55e; }
-    .dot.err { background: #ef4444; }
+
+    .dot.ok { background: #15803d; }
+    .dot.err { background: var(--danger); }
+
+    .quick-actions,
+    .tabs,
+    .form-grid,
+    .inline-fields,
+    .template-grid {
+      display: grid;
+      gap: 12px;
+    }
+
     .quick-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: center;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .mini-btn {
-      padding: 7px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      background: #ffffff;
+
+    button,
+    select,
+    input,
+    textarea {
+      font: 500 0.95rem/1.4 Arial, sans-serif;
+    }
+
+    .ghost,
+    .tab-btn,
+    .template-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .ghost,
+    .tab-btn {
+      padding: 12px 14px;
       cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 600;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
     }
-    .mini-btn:hover { background: #f8fafc; }
+
+    .ghost:hover,
+    .tab-btn:hover,
+    .template-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(15, 118, 110, 0.45);
+    }
 
     .tabs {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin-bottom: 18px;
     }
-    .tab-btn {
-      padding: 8px 20px;
-      border: none;
-      border-radius: 8px;
-      background: #dde;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: background 0.15s;
+
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
     }
-    .tab-btn.active { background: #3b82f6; color: #fff; }
 
     .panel {
       display: none;
-      max-width: 520px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 14px;
-      padding: 28px 24px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+      padding: 22px;
     }
+
     .panel.active { display: block; }
 
-    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; margin-top: 16px; }
-    label:first-child { margin-top: 0; }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
 
-    input, textarea, select {
+    .panel-head p,
+    .hint,
+    .template-card p,
+    .small-note {
+      margin: 0;
+      color: var(--muted);
+      font: 500 0.9rem/1.55 Arial, sans-serif;
+    }
+
+    .form-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .span-12 { grid-column: span 12; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+
+    .field,
+    .card {
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(20, 17, 15, 0.08);
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font: 700 0.78rem/1.2 Arial, sans-serif;
+      color: #3f3935;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    input,
+    select,
+    textarea {
       width: 100%;
-      padding: 9px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-family: inherit;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
       outline: none;
-      transition: border-color 0.15s;
     }
-    input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
-    textarea { resize: vertical; min-height: 80px; }
 
-    .row { display: flex; gap: 12px; }
-    .row > div { flex: 1; }
+    textarea { min-height: 120px; resize: vertical; }
 
-    button[type="submit"] {
-      margin-top: 20px;
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(15, 118, 110, 0.65);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.08);
+    }
+
+    .inline-fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font: 600 0.92rem/1.4 Arial, sans-serif;
+      color: #3f3935;
+    }
+
+    .checkbox-row input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+
+    .submit {
       width: 100%;
-      padding: 11px;
-      background: #3b82f6;
-      color: #fff;
+      margin-top: 18px;
+      padding: 14px 16px;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #fff;
       cursor: pointer;
-      transition: background 0.15s;
+      font: 700 1rem/1.2 Arial, sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
-    button[type="submit"]:hover { background: #2563eb; }
-    button[type="submit"]:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .submit:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .template-grid {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      margin-top: 8px;
+    }
+
+    .template-card {
+      padding: 14px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .template-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font: 700 0.92rem/1.2 Arial, sans-serif;
+    }
+
+    .template-card.active {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
 
     .toast {
       position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(60px);
-      background: #1e293b;
+      right: 18px;
+      bottom: 18px;
+      max-width: 360px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #1c1917;
       color: #fff;
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-size: 0.9rem;
+      font: 600 0.94rem/1.45 Arial, sans-serif;
       opacity: 0;
-      transition: transform 0.3s, opacity 0.3s;
-      z-index: 999;
+      transform: translateY(20px);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
     }
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-    .toast.error { background: #dc2626; }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs,
+      .quick-actions,
+      .inline-fields {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .span-6,
+      .span-4,
+      .span-3 {
+        grid-column: span 12;
+      }
+
+      .panel-head {
+        flex-direction: column;
+        align-items: start;
+      }
+    }
   </style>
 </head>
 <body>
-
-<header>
-  <h1>🏷️ Dymo LabelManager Server</h1>
-  <p>Druckserver für Dymo LabelManager PnP</p>
-</header>
-
-<div class="status-wrap">
-  <div class="status-bar">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText">Verbinde…</span>
-  </div>
-  <div class="quick-actions">
-    <button class="mini-btn" type="button" onclick="checkStatus()">Status prüfen</button>
-    <button class="mini-btn" type="button" onclick="printShortTest()">Massband-Test 90mm</button>
-  </div>
-</div>
-
-<div class="tabs">
-  <button class="tab-btn active" onclick="showTab(event, 'text')">Text</button>
-  <button class="tab-btn" onclick="showTab(event, 'qr')">QR-Code</button>
-  <button class="tab-btn" onclick="showTab(event, 'barcode')">Barcode</button>
-</div>
-
-<!-- TEXT -->
-<div class="panel active" id="panel-text">
-  <form onsubmit="submitForm(event, '/api/print/text', getTextPayload)">
-    <label for="text">Labeltext (mehrere Zeilen möglich)</label>
-    <textarea id="text" placeholder="Zeile 1&#10;Zeile 2&#10;Zeile 3" required></textarea>
-
-    <div class="row">
-      <div>
-        <label for="text-tape">Bandbreite (mm)</label>
-        <select id="text-tape">
-          <option value="6">6 mm</option>
-          <option value="9">9 mm</option>
-          <option value="12" selected>12 mm</option>
-          <option value="19">19 mm</option>
-          <option value="24">24 mm</option>
-        </select>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">Dymo LabelManager PnP</div>
+        <h1>Fast labels.<br/>Now with templates and automation.</h1>
+        <p class="hero-copy">Der Server druckt weiterhin lokal auf deinem kalibrierten 40-mm-Flow, kann jetzt aber auch Fonts, Bilder, Formen, Rahmen, Datum/Uhrzeit, Zaehler, mehrere Barcode-Typen, QR-Modi und Vorlagen aus einer einheitlichen Komposition erzeugen.</p>
       </div>
-      <div>
-        <label for="text-font">Schriftgröße</label>
-        <select id="text-font">
-          <option value="">Auto</option>
-          <option value="6">6</option>
-          <option value="8">8</option>
-          <option value="10" selected>10</option>
-          <option value="12">12</option>
-          <option value="14">14</option>
-          <option value="18">18</option>
-        </select>
+
+      <div class="hero-card status-stack">
+        <div class="status-chip">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">Verbinde...</span>
+        </div>
+        <div class="quick-actions">
+          <button class="ghost" type="button" onclick="checkStatus()">Status pruefen</button>
+          <button class="ghost" type="button" onclick="printShortTest()">Massband-Test 90 mm</button>
+        </div>
+        <p class="small-note">Die neuen Designer-Felder schicken denselben Automations- und Template-Payload an die API wie externe Clients.</p>
       </div>
-    </div>
+    </section>
 
-    <button type="submit">🖨️ Drucken</button>
-  </form>
-</div>
+    <nav class="tabs">
+      <button class="tab-btn active" type="button" onclick="showTab(event, 'designer')">Designer</button>
+      <button class="tab-btn" type="button" onclick="showTab(event, 'text')">Text</button>
+      <button class="tab-btn" type="button" onclick="showTab(event, 'qr')">QR</button>
+      <button class="tab-btn" type="button" onclick="showTab(event, 'barcode')">Barcode</button>
+      <button class="tab-btn" type="button" onclick="showTab(event, 'batch')">Batch</button>
+    </nav>
 
-<!-- QR -->
-<div class="panel" id="panel-qr">
-  <form onsubmit="submitForm(event, '/api/print/qr', getQRPayload)">
-    <label for="qr-content">QR-Code Inhalt (URL, Text, …)</label>
-    <input id="qr-content" type="text" placeholder="https://example.com" required />
+    <section class="panel active" id="panel-designer">
+      <div class="panel-head">
+        <div>
+          <h2>Advanced Designer</h2>
+          <p>Templates, Fonts, Shapes, Bilder und automatisierte Texte in einem Druckauftrag.</p>
+        </div>
+        <p class="hint">Fuer Counter-Serien gibt es parallel auch den API-Endpunkt /api/print/counter-series.</p>
+      </div>
 
-    <label for="qr-label">Beschriftung unter dem QR-Code (optional)</label>
-    <input id="qr-label" type="text" placeholder="Mein Label" />
+      <div class="card span-12">
+        <h3>Vorlagen</h3>
+        <p class="small-note">Ein Klick setzt die aktive Vorlage. Die gleiche Auswahl ist unten im Formular hinterlegt.</p>
+        <div class="template-grid" id="templateGrid"></div>
+      </div>
 
-    <label for="qr-tape">Bandbreite (mm)</label>
-    <select id="qr-tape">
-      <option value="9">9 mm</option>
-      <option value="12" selected>12 mm</option>
-      <option value="19">19 mm</option>
-      <option value="24">24 mm</option>
-    </select>
+      <form onsubmit="submitForm(event, '/api/print/designer', getDesignerPayload)">
+        <div class="form-grid">
+          <div class="field span-4">
+            <label for="designer-template">Template</label>
+            <select id="designer-template"></select>
+          </div>
+          <div class="field span-4">
+            <label for="designer-tape">Bandbreite</label>
+            <select id="designer-tape">
+              <option value="6">6 mm</option>
+              <option value="9">9 mm</option>
+              <option value="12" selected>12 mm</option>
+              <option value="19">19 mm</option>
+              <option value="24">24 mm</option>
+            </select>
+          </div>
+          <div class="field span-4">
+            <label for="designer-shape">Form oder Rahmen</label>
+            <select id="designer-shape">
+              <option value="none">Keine</option>
+              <option value="rect">Rechteck</option>
+              <option value="roundrect">Rundes Rechteck</option>
+              <option value="line">Linie</option>
+              <option value="circle">Kreis/Ellipse</option>
+            </select>
+          </div>
 
-    <button type="submit">🖨️ Drucken</button>
-  </form>
-</div>
+          <div class="field span-12">
+            <label for="designer-text">Haupttext</label>
+            <textarea id="designer-text" placeholder="Artikelname&#10;Ort oder Zusatzzeile"></textarea>
+          </div>
 
-<!-- BARCODE -->
-<div class="panel" id="panel-barcode">
-  <form onsubmit="submitForm(event, '/api/print/barcode', getBarcodePayload)">
-    <label for="barcode-value">Barcode-Wert (Code128)</label>
-    <input id="barcode-value" type="text" placeholder="123456789" required />
+          <div class="field span-3">
+            <label for="designer-font-family">Font</label>
+            <select id="designer-font-family">
+              <option value="sans-bold" selected>Sans Bold</option>
+              <option value="sans">Sans</option>
+              <option value="serif-bold">Serif Bold</option>
+              <option value="serif">Serif</option>
+              <option value="mono-bold">Mono Bold</option>
+              <option value="mono">Mono</option>
+            </select>
+          </div>
+          <div class="field span-3">
+            <label for="designer-font-size">Schriftgroesse</label>
+            <input id="designer-font-size" type="number" min="8" max="28" value="16" />
+          </div>
+          <div class="field span-3">
+            <label for="designer-align">Ausrichtung</label>
+            <select id="designer-align">
+              <option value="left">Links</option>
+              <option value="center">Zentriert</option>
+              <option value="right">Rechts</option>
+            </select>
+          </div>
+          <div class="field span-3">
+            <label>Textstil</label>
+            <div class="inline-fields">
+              <label class="checkbox-row"><input id="designer-frame" type="checkbox" /> Rahmen</label>
+              <label class="checkbox-row"><input id="designer-underline" type="checkbox" /> Unterstrich</label>
+            </div>
+          </div>
 
-    <label for="barcode-label">Beschriftung unter dem Barcode (optional)</label>
-    <input id="barcode-label" type="text" placeholder="Artikel-Nr." />
+          <div class="field span-4">
+            <label for="designer-dynamic-type">Automatischer Text</label>
+            <select id="designer-dynamic-type">
+              <option value="none" selected>Keiner</option>
+              <option value="date">Datum</option>
+              <option value="time">Uhrzeit</option>
+              <option value="datetime">Datum + Uhrzeit</option>
+              <option value="counter">Zaehler</option>
+            </select>
+          </div>
+          <div class="field span-4">
+            <label for="designer-dynamic-format">Format</label>
+            <input id="designer-dynamic-format" type="text" placeholder="%d.%m.%Y %H:%M" />
+          </div>
+          <div class="field span-4">
+            <label for="designer-counter-prefix">Counter Prefix/Suffix</label>
+            <div class="inline-fields">
+              <input id="designer-counter-prefix" type="text" placeholder="Prefix" />
+              <input id="designer-counter-suffix" type="text" placeholder="Suffix" />
+            </div>
+          </div>
 
-    <label for="barcode-tape">Bandbreite (mm)</label>
-    <select id="barcode-tape">
-      <option value="9">9 mm</option>
-      <option value="12" selected>12 mm</option>
-      <option value="19">19 mm</option>
-      <option value="24">24 mm</option>
-    </select>
+          <div class="field span-3">
+            <label for="designer-counter-start">Counter Start</label>
+            <input id="designer-counter-start" type="number" value="1" />
+          </div>
+          <div class="field span-3">
+            <label for="designer-counter-step">Intervall</label>
+            <input id="designer-counter-step" type="number" value="1" />
+          </div>
+          <div class="field span-3">
+            <label for="designer-counter-end">Ende</label>
+            <input id="designer-counter-end" type="number" value="100" />
+          </div>
+          <div class="field span-3">
+            <label for="designer-counter-current">Aktuell / Pad</label>
+            <div class="inline-fields">
+              <input id="designer-counter-current" type="number" value="1" />
+              <input id="designer-counter-pad" type="number" min="0" value="0" />
+            </div>
+          </div>
 
-    <button type="submit">🖨️ Drucken</button>
-  </form>
-</div>
+          <div class="field span-3">
+            <label for="designer-barcode-type">Barcode-Typ</label>
+            <select id="designer-barcode-type">
+              <option value="code128" selected>Code128</option>
+              <option value="code39">Code39</option>
+              <option value="ean13">EAN-13</option>
+              <option value="ean8">EAN-8</option>
+              <option value="upca">UPC-A</option>
+              <option value="upce">UPC-E</option>
+              <option value="itf">ITF</option>
+              <option value="codabar">Codabar</option>
+              <option value="pdf417">PDF417</option>
+              <option value="datamatrix">DataMatrix</option>
+            </select>
+          </div>
+          <div class="field span-5">
+            <label for="designer-barcode-value">Barcode-Wert</label>
+            <input id="designer-barcode-value" type="text" placeholder="123456789012" />
+          </div>
+          <div class="field span-4">
+            <label for="designer-barcode-label">Barcode-Beschriftung</label>
+            <input id="designer-barcode-label" type="text" placeholder="Asset-Tag" />
+          </div>
 
-<div class="toast" id="toast"></div>
+          <div class="field span-4">
+            <label for="designer-qr-mode">QR-Modus</label>
+            <select id="designer-qr-mode">
+              <option value="text" selected>Text</option>
+              <option value="url">URL</option>
+              <option value="phone">Telefon</option>
+              <option value="email">E-Mail</option>
+              <option value="sms">SMS</option>
+              <option value="vcard">vCard</option>
+            </select>
+          </div>
+          <div class="field span-5">
+            <label for="designer-qr-value">QR-Inhalt</label>
+            <input id="designer-qr-value" type="text" placeholder="https://example.local" />
+          </div>
+          <div class="field span-3">
+            <label>Barcode-Text</label>
+            <label class="checkbox-row"><input id="designer-barcode-show-text" type="checkbox" /> Im Barcode anzeigen</label>
+          </div>
 
-<script>
-  // --- Tab-Steuerung ---
-  function showTab(evt, name) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('panel-' + name).classList.add('active');
-    evt.target.classList.add('active');
-  }
+          <div class="field span-6">
+            <label for="designer-image">Kleines Bild</label>
+            <input id="designer-image" type="file" accept="image/*" />
+          </div>
+          <div class="field span-3">
+            <label for="designer-shape-stroke">Linienstaerke</label>
+            <input id="designer-shape-stroke" type="number" min="1" max="6" value="1" />
+          </div>
+          <div class="field span-3">
+            <label>Form-Fuellung</label>
+            <label class="checkbox-row"><input id="designer-shape-filled" type="checkbox" /> Gefuellt</label>
+          </div>
+        </div>
 
-  // --- Status-Check beim Laden ---
-  async function checkStatus() {
-    try {
-      const res = await fetch('/api/status');
-      const data = await res.json();
-      const dot = document.getElementById('statusDot');
-      const txt = document.getElementById('statusText');
-      if (data.available) {
-        dot.className = 'dot ok';
-        txt.textContent = 'dymoprint verfügbar – bereit';
-      } else {
-        dot.className = 'dot err';
-        txt.textContent = 'dymoprint nicht erreichbar: ' + (data.error || '');
-      }
-    } catch {
-      document.getElementById('statusDot').className = 'dot err';
-      document.getElementById('statusText').textContent = 'Server nicht erreichbar';
+        <button class="submit" type="submit">Designer-Label drucken</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-text">
+      <div class="panel-head">
+        <div>
+          <h2>Text</h2>
+          <p>Schneller Zugriff auf Textdruck mit Template, Font, Rahmen und Ausrichtung.</p>
+        </div>
+      </div>
+      <form onsubmit="submitForm(event, '/api/print/text', getTextPayload)">
+        <div class="form-grid">
+          <div class="field span-12">
+            <label for="text">Text</label>
+            <textarea id="text" placeholder="Zeile 1&#10;Zeile 2&#10;Zeile 3" required></textarea>
+          </div>
+          <div class="field span-3"><label for="text-template">Template</label><select id="text-template"></select></div>
+          <div class="field span-3"><label for="text-tape">Bandbreite</label><select id="text-tape"><option value="6">6 mm</option><option value="9">9 mm</option><option value="12" selected>12 mm</option><option value="19">19 mm</option><option value="24">24 mm</option></select></div>
+          <div class="field span-3"><label for="text-font-size">Schriftgroesse</label><input id="text-font-size" type="number" min="8" max="28" value="18" /></div>
+          <div class="field span-3"><label for="text-font-family">Font</label><select id="text-font-family"><option value="sans-bold" selected>Sans Bold</option><option value="sans">Sans</option><option value="serif-bold">Serif Bold</option><option value="serif">Serif</option><option value="mono-bold">Mono Bold</option><option value="mono">Mono</option></select></div>
+          <div class="field span-6"><label for="text-align">Ausrichtung</label><select id="text-align"><option value="left">Links</option><option value="center" selected>Zentriert</option><option value="right">Rechts</option></select></div>
+          <div class="field span-6"><label>Stil</label><div class="inline-fields"><label class="checkbox-row"><input id="text-frame" type="checkbox" /> Rahmen</label><label class="checkbox-row"><input id="text-underline" type="checkbox" /> Unterstrich</label></div></div>
+        </div>
+        <button class="submit" type="submit">Textlabel drucken</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-qr">
+      <div class="panel-head">
+        <div>
+          <h2>QR</h2>
+          <p>QR-Codes mit URL-, Telefon-, E-Mail-, SMS- oder Text-Payload.</p>
+        </div>
+      </div>
+      <form onsubmit="submitForm(event, '/api/print/qr', getQRPayload)">
+        <div class="form-grid">
+          <div class="field span-5"><label for="qr-content">QR-Inhalt</label><input id="qr-content" type="text" placeholder="https://example.com" required /></div>
+          <div class="field span-3"><label for="qr-mode">Modus</label><select id="qr-mode"><option value="text" selected>Text</option><option value="url">URL</option><option value="phone">Telefon</option><option value="email">E-Mail</option><option value="sms">SMS</option><option value="vcard">vCard</option></select></div>
+          <div class="field span-4"><label for="qr-label">Beschriftung</label><input id="qr-label" type="text" placeholder="Info" /></div>
+          <div class="field span-6"><label for="qr-template">Template</label><select id="qr-template"></select></div>
+          <div class="field span-6"><label for="qr-tape">Bandbreite</label><select id="qr-tape"><option value="9">9 mm</option><option value="12" selected>12 mm</option><option value="19">19 mm</option><option value="24">24 mm</option></select></div>
+        </div>
+        <button class="submit" type="submit">QR-Label drucken</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-barcode">
+      <div class="panel-head">
+        <div>
+          <h2>Barcode</h2>
+          <p>Mehrere Symbologien fuer Waren, Inventar und technische Kennzeichnungen.</p>
+        </div>
+      </div>
+      <form onsubmit="submitForm(event, '/api/print/barcode', getBarcodePayload)">
+        <div class="form-grid">
+          <div class="field span-3"><label for="barcode-type">Typ</label><select id="barcode-type"><option value="code128" selected>Code128</option><option value="code39">Code39</option><option value="ean13">EAN-13</option><option value="ean8">EAN-8</option><option value="upca">UPC-A</option><option value="upce">UPC-E</option><option value="itf">ITF</option><option value="codabar">Codabar</option><option value="pdf417">PDF417</option><option value="datamatrix">DataMatrix</option></select></div>
+          <div class="field span-5"><label for="barcode-value">Wert</label><input id="barcode-value" type="text" placeholder="123456789012" required /></div>
+          <div class="field span-4"><label for="barcode-label">Beschriftung</label><input id="barcode-label" type="text" placeholder="Artikel-Nr." /></div>
+          <div class="field span-4"><label for="barcode-template">Template</label><select id="barcode-template"></select></div>
+          <div class="field span-4"><label for="barcode-tape">Bandbreite</label><select id="barcode-tape"><option value="9">9 mm</option><option value="12" selected>12 mm</option><option value="19">19 mm</option><option value="24">24 mm</option></select></div>
+          <div class="field span-4"><label>Darstellung</label><label class="checkbox-row"><input id="barcode-show-text" type="checkbox" /> Wert auch im Barcode</label></div>
+        </div>
+        <button class="submit" type="submit">Barcode-Label drucken</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-batch">
+      <div class="panel-head">
+        <div>
+          <h2>Batch</h2>
+          <p>CSV- oder XLSX-Datei laden, Spalten mappen und ganze Serien in einem Lauf drucken.</p>
+        </div>
+      </div>
+      <form onsubmit="submitForm(event, '/api/print/batch', getBatchPayload)">
+        <div class="form-grid">
+          <div class="field span-4"><label for="batch-file">CSV oder XLSX</label><input id="batch-file" type="file" accept=".csv,.xlsx,.xls" /></div>
+          <div class="field span-4"><label for="batch-template">Template</label><select id="batch-template"></select></div>
+          <div class="field span-4"><label for="batch-tape">Bandbreite</label><select id="batch-tape"><option value="6">6 mm</option><option value="9">9 mm</option><option value="12" selected>12 mm</option><option value="19">19 mm</option><option value="24">24 mm</option></select></div>
+
+          <div class="field span-3"><label for="batch-text-column">Text-Spalte</label><input id="batch-text-column" type="text" placeholder="name" /></div>
+          <div class="field span-3"><label for="batch-barcode-column">Barcode-Spalte</label><input id="batch-barcode-column" type="text" placeholder="sku" /></div>
+          <div class="field span-3"><label for="batch-barcode-label-column">Barcode-Label-Spalte</label><input id="batch-barcode-label-column" type="text" placeholder="label" /></div>
+          <div class="field span-3"><label for="batch-qr-column">QR-Spalte</label><input id="batch-qr-column" type="text" placeholder="url" /></div>
+
+          <div class="field span-3"><label for="batch-barcode-type">Barcode-Typ</label><select id="batch-barcode-type"><option value="code128" selected>Code128</option><option value="code39">Code39</option><option value="ean13">EAN-13</option><option value="ean8">EAN-8</option><option value="upca">UPC-A</option><option value="upce">UPC-E</option><option value="itf">ITF</option><option value="codabar">Codabar</option><option value="pdf417">PDF417</option><option value="datamatrix">DataMatrix</option></select></div>
+          <div class="field span-3"><label for="batch-qr-mode">QR-Modus</label><select id="batch-qr-mode"><option value="text" selected>Text</option><option value="url">URL</option><option value="phone">Telefon</option><option value="email">E-Mail</option><option value="sms">SMS</option><option value="vcard">vCard</option></select></div>
+          <div class="field span-3"><label for="batch-font-family">Font</label><select id="batch-font-family"><option value="sans-bold" selected>Sans Bold</option><option value="sans">Sans</option><option value="serif-bold">Serif Bold</option><option value="serif">Serif</option><option value="mono-bold">Mono Bold</option><option value="mono">Mono</option></select></div>
+          <div class="field span-3"><label for="batch-font-size">Schriftgroesse</label><input id="batch-font-size" type="number" min="8" max="28" value="14" /></div>
+
+          <div class="field span-12">
+            <label for="batch-preview">Vorschau</label>
+            <textarea id="batch-preview" readonly placeholder="Nach dem Laden der Datei erscheinen hier die ersten Zeilen."></textarea>
+          </div>
+        </div>
+
+        <button class="submit" type="submit">Batch drucken</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let templateOptions = [];
+    let designerImageData = '';
+    let batchFileData = '';
+    let batchParsedRows = [];
+
+    function showTab(evt, name) {
+      document.querySelectorAll('.panel').forEach((panel) => panel.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach((button) => button.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      evt.currentTarget.classList.add('active');
     }
-  }
 
-  // --- Toast-Meldung ---
-  function showToast(msg, isError = false) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show' + (isError ? ' error' : '');
-    setTimeout(() => { t.className = 'toast'; }, 3500);
-  }
+    async function checkStatus() {
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        if (data.available) {
+          dot.className = 'dot ok';
+          text.textContent = 'dymoprint verfuegbar - bereit';
+        } else {
+          dot.className = 'dot err';
+          text.textContent = 'dymoprint nicht erreichbar: ' + (data.error || 'unbekannt');
+        }
+      } catch {
+        document.getElementById('statusDot').className = 'dot err';
+        document.getElementById('statusText').textContent = 'Server nicht erreichbar';
+      }
+    }
 
-  // --- Payload-Builder ---
-  function getTextPayload() {
-    return {
-      text: document.getElementById('text').value,
-      tapeSize: parseInt(document.getElementById('text-tape').value),
-      fontSize: document.getElementById('text-font').value
-        ? parseInt(document.getElementById('text-font').value)
-        : undefined,
-    };
-  }
-  function getQRPayload() {
-    return {
-      qrContent: document.getElementById('qr-content').value,
-      label: document.getElementById('qr-label').value || undefined,
-      tapeSize: parseInt(document.getElementById('qr-tape').value),
-    };
-  }
-  function getBarcodePayload() {
-    return {
-      barcodeValue: document.getElementById('barcode-value').value,
-      label: document.getElementById('barcode-label').value || undefined,
-      tapeSize: parseInt(document.getElementById('barcode-tape').value),
-    };
-  }
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show' + (isError ? ' error' : '');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.className = 'toast';
+      }, 3600);
+    }
 
-  // --- Formular absenden ---
-  async function submitForm(event, endpoint, payloadFn) {
-    event.preventDefault();
-    const btn = event.target.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.textContent = 'Druckt…';
-    try {
-      const res = await fetch(endpoint, {
+    function populateTemplateSelect(selectId) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = templateOptions
+        .map((template) => `<option value="${template.id}">${template.name}</option>`)
+        .join('');
+    }
+
+    function syncTemplateGrid(activeId) {
+      document.querySelectorAll('.template-card').forEach((card) => {
+        card.classList.toggle('active', card.dataset.template === activeId);
+      });
+    }
+
+    function setDesignerTemplate(templateId) {
+      document.getElementById('designer-template').value = templateId;
+      syncTemplateGrid(templateId);
+    }
+
+    async function loadTemplates() {
+      const response = await fetch('/api/templates');
+      const data = await response.json();
+      templateOptions = data.templates || [];
+
+      ['designer-template', 'text-template', 'qr-template', 'barcode-template', 'batch-template'].forEach(populateTemplateSelect);
+
+      const grid = document.getElementById('templateGrid');
+      grid.innerHTML = templateOptions
+        .map((template) => `
+          <button class="template-card" type="button" data-template="${template.id}" onclick="setDesignerTemplate('${template.id}')">
+            <strong>${template.name}</strong>
+            <p>${template.description}</p>
+          </button>
+        `)
+        .join('');
+
+      setDesignerTemplate(templateOptions[0] ? templateOptions[0].id : 'blank');
+    }
+
+    function readNumber(id) {
+      const value = document.getElementById(id).value;
+      return value === '' ? undefined : Number(value);
+    }
+
+    function getTextPayload() {
+      return {
+        text: document.getElementById('text').value,
+        template: document.getElementById('text-template').value,
+        tapeSize: readNumber('text-tape'),
+        fontSize: readNumber('text-font-size'),
+        fontFamily: document.getElementById('text-font-family').value,
+        align: document.getElementById('text-align').value,
+        frame: document.getElementById('text-frame').checked,
+        underline: document.getElementById('text-underline').checked,
+      };
+    }
+
+    function getQRPayload() {
+      return {
+        qrContent: document.getElementById('qr-content').value,
+        qrMode: document.getElementById('qr-mode').value,
+        label: document.getElementById('qr-label').value || undefined,
+        template: document.getElementById('qr-template').value,
+        tapeSize: readNumber('qr-tape'),
+      };
+    }
+
+    function getBarcodePayload() {
+      return {
+        barcodeValue: document.getElementById('barcode-value').value,
+        label: document.getElementById('barcode-label').value || undefined,
+        symbology: document.getElementById('barcode-type').value,
+        template: document.getElementById('barcode-template').value,
+        tapeSize: readNumber('barcode-tape'),
+        showText: document.getElementById('barcode-show-text').checked,
+      };
+    }
+
+    function getBatchPayload() {
+      return {
+        tapeSize: readNumber('batch-tape'),
+        rows: batchParsedRows,
+        mapping: {
+          text: document.getElementById('batch-text-column').value || undefined,
+          barcodeValue: document.getElementById('batch-barcode-column').value || undefined,
+          barcodeLabel: document.getElementById('batch-barcode-label-column').value || undefined,
+          qrValue: document.getElementById('batch-qr-column').value || undefined,
+        },
+        defaults: {
+          template: document.getElementById('batch-template').value,
+          barcodeType: document.getElementById('batch-barcode-type').value,
+          qrMode: document.getElementById('batch-qr-mode').value,
+          fontFamily: document.getElementById('batch-font-family').value,
+          fontSize: readNumber('batch-font-size'),
+        },
+      };
+    }
+
+    function getDesignerPayload() {
+      return {
+        template: document.getElementById('designer-template').value,
+        tapeSize: readNumber('designer-tape'),
+        text: document.getElementById('designer-text').value || undefined,
+        fontFamily: document.getElementById('designer-font-family').value,
+        fontSize: readNumber('designer-font-size'),
+        align: document.getElementById('designer-align').value,
+        frame: document.getElementById('designer-frame').checked,
+        underline: document.getElementById('designer-underline').checked,
+        dynamicType: document.getElementById('designer-dynamic-type').value,
+        dynamicFormat: document.getElementById('designer-dynamic-format').value || undefined,
+        counterPrefix: document.getElementById('designer-counter-prefix').value || undefined,
+        counterSuffix: document.getElementById('designer-counter-suffix').value || undefined,
+        counterStart: readNumber('designer-counter-start'),
+        counterStep: readNumber('designer-counter-step'),
+        counterEnd: readNumber('designer-counter-end'),
+        counterCurrent: readNumber('designer-counter-current'),
+        counterPad: readNumber('designer-counter-pad'),
+        shape: document.getElementById('designer-shape').value,
+        shapeStrokeWidth: readNumber('designer-shape-stroke'),
+        shapeFilled: document.getElementById('designer-shape-filled').checked,
+        barcodeType: document.getElementById('designer-barcode-type').value,
+        barcodeValue: document.getElementById('designer-barcode-value').value || undefined,
+        barcodeLabel: document.getElementById('designer-barcode-label').value || undefined,
+        barcodeShowText: document.getElementById('designer-barcode-show-text').checked,
+        qrMode: document.getElementById('designer-qr-mode').value,
+        qrValue: document.getElementById('designer-qr-value').value || undefined,
+        imageData: designerImageData || undefined,
+      };
+    }
+
+    async function submitForm(event, endpoint, payloadFn) {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector('button[type="submit"]');
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Druckt...';
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadFn()),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showToast(data.message || 'Druckauftrag gesendet');
+        } else {
+          const errorText = data.errors ? data.errors.map((entry) => entry.msg).join(', ') : (data.error || 'Fehler');
+          showToast(errorText, true);
+        }
+      } catch (error) {
+        showToast('Netzwerkfehler: ' + error.message, true);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    async function printShortTest() {
+      try {
+        const response = await fetch('/api/print/test-short', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tapeSize: 12 }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showToast(data.message);
+        } else {
+          showToast(data.error || 'Massband-Test fehlgeschlagen', true);
+        }
+      } catch (error) {
+        showToast('Netzwerkfehler: ' + error.message, true);
+      }
+    }
+
+    async function parseBatchFile(file) {
+      const fileData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      batchFileData = fileData;
+      const response = await fetch('/api/import/parse-table', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloadFn()),
+        body: JSON.stringify({ fileName: file.name, fileData }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('✅ ' + data.message);
-      } else {
-        const errMsg = data.errors
-          ? data.errors.map(e => e.msg).join(', ')
-          : (data.error || 'Fehler');
-        showToast('❌ ' + errMsg, true);
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Datei konnte nicht gelesen werden');
       }
-    } catch (err) {
-      showToast('❌ Netzwerkfehler: ' + err.message, true);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '🖨️ Drucken';
-    }
-  }
 
-  // --- Extra kurzer Testdruck ---
-  async function printShortTest() {
-    try {
-      const res = await fetch('/api/print/test-short', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tapeSize: 12 }),
+      batchParsedRows = data.rows || [];
+      document.getElementById('batch-preview').value = JSON.stringify(data.previewRows || [], null, 2);
+      if (data.columns && data.columns.length) {
+        document.getElementById('batch-text-column').value = data.columns[0] || '';
+        document.getElementById('batch-barcode-column').value = data.columns[1] || '';
+        document.getElementById('batch-qr-column').value = data.columns[2] || '';
+      }
+      showToast(`${data.rowCount} Zeilen aus ${data.fileName} geladen`);
+    }
+
+    document.getElementById('designer-image').addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        designerImageData = '';
+        return;
+      }
+
+      designerImageData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('✅ ' + data.message);
-      } else {
-        showToast('❌ ' + (data.error || 'Kurztest fehlgeschlagen'), true);
-      }
-    } catch (err) {
-      showToast('❌ Netzwerkfehler: ' + err.message, true);
-    }
-  }
+    });
 
-  checkStatus();
-</script>
+    document.getElementById('batch-file').addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        batchFileData = '';
+        batchParsedRows = [];
+        document.getElementById('batch-preview').value = '';
+        return;
+      }
+
+      try {
+        await parseBatchFile(file);
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadTemplates();
+      await checkStatus();
+    });
+  </script>
 </body>
 </html>

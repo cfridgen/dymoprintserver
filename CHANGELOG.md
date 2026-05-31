@@ -2,8 +2,18 @@
 
 ## 1.5.0-dev.0 - Unreleased
 
-### Planned
-- Next feature cycle starts here
+### Added
+- Generic compose API for multi-object labels via `/api/print/compose`
+- Advanced browser designer with templates, fonts, frames, shapes, image upload, QR modes, and multiple barcode types
+- Dynamic text objects for date, time, datetime, and counters
+- Built-in templates: blank, warning, badge, inventory, cable, address
+- Counter series endpoint for automated sequential labels
+- CSV/XLSX parse endpoint and batch printing flow with column mapping
+- Advanced code support for PDF417, DataMatrix, UPC-E, and QR vCard payloads
+
+### Changed
+- Text, QR, and barcode routes now use the shared composition pipeline
+- Label rendering upgraded from single-purpose layouts to a reusable object renderer
 
 ## 1.0.1 - 2026-05-31
 

@@ -9,6 +9,17 @@ Features:
 - Kalibrierung fuer gemessenen 12-mm-Vorlauf bei DYMO PnP
 - Massband-Testdruck (90 mm) zur Kalibrierung
 
+## Screenshots
+
+Text-Ansicht:
+![Text UI](docs/screenshots/ui-text.png)
+
+QR-Ansicht:
+![QR UI](docs/screenshots/ui-qr.png)
+
+Barcode-Ansicht:
+![Barcode UI](docs/screenshots/ui-barcode.png)
+
 ## Schnellstart (Endanwender)
 
 Voraussetzungen:

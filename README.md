@@ -8,6 +8,8 @@ Features:
 - Fixe Label-Gesamtlaenge (40 mm) fuer stabile Handhabung
 - Kalibrierung fuer gemessenen 12-mm-Vorlauf bei DYMO PnP
 - Massband-Testdruck (90 mm) zur Kalibrierung
+- Live-Preview fuer Textlabels direkt unter dem Eingabefeld
+- Auto-Fit-Text, damit kurze Einzeiler die volle Labelhoehe nutzen
 - Fonts, Rahmen, Formen, Bilder, Datum/Uhrzeit und Counter-Objekte
 - Mehrere Barcode-Typen: Code128, Code39, EAN-8, EAN-13, UPC-A, UPC-E, ITF, Codabar, PDF417, DataMatrix
 - QR-Modi: Text, URL, Telefon, E-Mail, SMS, vCard

@@ -22,7 +22,8 @@ function centeredText(text, overrides = {}) {
     w: 92,
     h: 62,
     fontFamily: 'sans-bold',
-    fontSize: 18,
+    fontSize: 0,
+    autoFit: true,
     align: 'center',
     ...overrides,
   };
@@ -74,7 +75,8 @@ function buildTextPayload(text, options = {}) {
   payload.objects.push(
     centeredText(text, {
       fontFamily: options.fontFamily || 'sans-bold',
-      fontSize: options.fontSize || 18,
+      fontSize: options.fontSize || 0,
+      autoFit: options.autoFit !== false,
       border: Boolean(options.frame),
       underline: Boolean(options.underline),
       align: options.align || 'center',
@@ -120,7 +122,8 @@ function addOptionalDesignerObjects(payload, form = {}) {
       w: form.barcodeValue || form.qrValue ? 52 : 88,
       h: 38,
       fontFamily: form.fontFamily || 'sans-bold',
-      fontSize: Number(form.fontSize) || 16,
+      fontSize: Number(form.fontSize) || 0,
+      autoFit: !Number(form.fontSize),
       align: form.align || 'left',
       border: Boolean(form.frame),
       underline: Boolean(form.underline),

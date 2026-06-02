@@ -208,6 +208,20 @@ async function printComposition(payload, tapeSize = TAPE_SIZE) {
   }
 }
 
+async function renderCompositionPreview(payload, tapeSize = TAPE_SIZE) {
+  const tempFile = path.join(os.tmpdir(), `dymo-preview-${Date.now()}.png`);
+
+  await runPython([
+    COMPOSED_LABEL_SCRIPT,
+    tempFile,
+    JSON.stringify(payload),
+    String(CONTENT_LABEL_MM),
+    String(tapeSize),
+  ]);
+
+  return tempFile;
+}
+
 /**
  * Druckt ein Massband-Testlabel mit mm-Strichen und cm-Zahlen.
  * @param {object} opts - { tapeSize, lengthMm }
@@ -257,4 +271,4 @@ async function getStatus() {
   };
 }
 
-module.exports = { printText, printQR, printBarcode, printComposition, printRulerTest, getStatus };
+module.exports = { printText, printQR, printBarcode, printComposition, renderCompositionPreview, printRulerTest, getStatus };

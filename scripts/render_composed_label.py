@@ -43,6 +43,42 @@ def load_font(family, size):
         return ImageFont.load_default()
 
 
+def measure_text(draw, text, font):
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+
+def fit_text_font(draw, lines, family, target_size, box_w, box_h, padding, min_size=8):
+    size = max(min_size, int(target_size))
+    while size >= min_size:
+        font = load_font(family, size)
+        spacing = max(1, int(size * 0.08))
+        max_w = 0
+        total_h = 0
+
+        for line in lines:
+            tw, th = measure_text(draw, line, font)
+            max_w = max(max_w, tw)
+            total_h += th
+
+        total_h += max(0, len(lines) - 1) * spacing
+        if max_w <= max(1, box_w - 2 * padding) and total_h <= max(1, box_h - 2 * padding):
+            return font, spacing, max_w, total_h
+
+        size -= 1
+
+    font = load_font(family, min_size)
+    spacing = max(1, int(min_size * 0.08))
+    max_w = 0
+    total_h = 0
+    for line in lines:
+        tw, th = measure_text(draw, line, font)
+        max_w = max(max_w, tw)
+        total_h += th
+    total_h += max(0, len(lines) - 1) * spacing
+    return font, spacing, max_w, total_h
+
+
 def fit_image(img, max_w, max_h):
     img = img.convert("1")
     w, h = img.size
@@ -124,10 +160,20 @@ def draw_text_object(draw, canvas, obj, width, height):
     underline = bool(obj.get("underline", False))
     align = obj.get("align", "center")
     family = obj.get("fontFamily", "sans-bold")
-    size = int(obj.get("fontSize", 16))
+    size = int(obj.get("fontSize", 0) or 0)
+    auto_fit = bool(obj.get("autoFit", size <= 0))
     lines = [line for line in resolve_dynamic_text(obj).split("\n") if line.strip()] or [" "]
-    font = load_font(family, size)
-    spacing = max(1, int(size * 0.08))
+    if auto_fit:
+        target_size = int(obj.get("targetFontSize", 42) or 42)
+        font, spacing, _, total_h = fit_text_font(draw, lines, family, target_size, w, h, padding)
+    else:
+        font = load_font(family, size)
+        spacing = max(1, int(size * 0.08))
+        total_h = 0
+        for line in lines:
+            _, th = measure_text(draw, line, font)
+            total_h += th
+        total_h += max(0, len(lines) - 1) * spacing
 
     if invert:
         draw_border(draw, (x, y, w, h), width=1, fill=0)
@@ -135,16 +181,9 @@ def draw_text_object(draw, canvas, obj, width, height):
         draw_border(draw, (x, y, w, h), width=int(obj.get("borderWidth", 1)))
 
     metrics = []
-    max_w = 0
-    total_h = 0
     for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
-        tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
+        tw, th = measure_text(draw, line, font)
         metrics.append((line, tw, th))
-        max_w = max(max_w, tw)
-        total_h += th
-    total_h += max(0, len(metrics) - 1) * spacing
 
     origin_y = y + max(padding, (h - total_h) // 2)
     text_fill = 1 if invert else 0

@@ -85,6 +85,39 @@ router.post(
   }
 );
 
+router.post(
+  '/preview/text',
+  body('text').isString().notEmpty().withMessage('text darf nicht leer sein'),
+  body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  async (req, res) => {
+    const validErr = handleValidation(req, res);
+    if (validErr !== null) return;
+
+    try {
+      const { text, tapeSize, fontSize, fontFamily, align, frame, underline, template } = req.body;
+      const payload = composer.buildTextPayload(text, {
+        tapeSize,
+        fontSize,
+        fontFamily,
+        align,
+        frame,
+        underline,
+        template,
+      });
+      const previewPath = await dymo.renderCompositionPreview(payload, tapeSize);
+      res.sendFile(previewPath, (err) => {
+        const fs = require('fs');
+        fs.unlink(previewPath, () => {});
+        if (err) {
+          console.error(err);
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+);
+
 // --- POST /api/print/qr ---
 // Body: { qrContent: "https://...", label: "Optionaler Text", tapeSize: 12 }
 router.post(

@@ -451,7 +451,7 @@
           </div>
           <div class="field span-3">
             <label for="designer-font-size">Schriftgroesse</label>
-            <input id="designer-font-size" type="number" min="8" max="28" value="16" />
+            <select id="designer-font-size"><option value="" selected>Auto</option><option value="8">8</option><option value="10">10</option><option value="12">12</option><option value="14">14</option><option value="16">16</option><option value="18">18</option><option value="22">22</option><option value="28">28</option></select>
           </div>
           <div class="field span-3">
             <label for="designer-align">Ausrichtung</label>
@@ -586,9 +586,13 @@
             <label for="text">Text</label>
             <textarea id="text" placeholder="Zeile 1&#10;Zeile 2&#10;Zeile 3" required></textarea>
           </div>
+          <div class="field span-12">
+            <label for="text-preview">Vorschau</label>
+            <img id="text-preview" alt="Textvorschau" style="width:100%;display:block;background:#fff;border:1px solid rgba(20,17,15,0.08);border-radius:16px;min-height:96px;object-fit:contain;" />
+          </div>
           <div class="field span-3"><label for="text-template">Template</label><select id="text-template"></select></div>
           <div class="field span-3"><label for="text-tape">Bandbreite</label><select id="text-tape"><option value="6">6 mm</option><option value="9">9 mm</option><option value="12" selected>12 mm</option><option value="19">19 mm</option><option value="24">24 mm</option></select></div>
-          <div class="field span-3"><label for="text-font-size">Schriftgroesse</label><input id="text-font-size" type="number" min="8" max="28" value="18" /></div>
+          <div class="field span-3"><label for="text-font-size">Schriftgroesse</label><select id="text-font-size"><option value="" selected>Auto</option><option value="8">8</option><option value="10">10</option><option value="12">12</option><option value="14">14</option><option value="16">16</option><option value="18">18</option></select></div>
           <div class="field span-3"><label for="text-font-family">Font</label><select id="text-font-family"><option value="sans-bold" selected>Sans Bold</option><option value="sans">Sans</option><option value="serif-bold">Serif Bold</option><option value="serif">Serif</option><option value="mono-bold">Mono Bold</option><option value="mono">Mono</option></select></div>
           <div class="field span-6"><label for="text-align">Ausrichtung</label><select id="text-align"><option value="left">Links</option><option value="center" selected>Zentriert</option><option value="right">Rechts</option></select></div>
           <div class="field span-6"><label>Stil</label><div class="inline-fields"><label class="checkbox-row"><input id="text-frame" type="checkbox" /> Rahmen</label><label class="checkbox-row"><input id="text-underline" type="checkbox" /> Unterstrich</label></div></div>
@@ -767,6 +771,7 @@
         align: document.getElementById('text-align').value,
         frame: document.getElementById('text-frame').checked,
         underline: document.getElementById('text-underline').checked,
+        autoFit: !document.getElementById('text-font-size').value,
       };
     }
 
@@ -818,6 +823,7 @@
         text: document.getElementById('designer-text').value || undefined,
         fontFamily: document.getElementById('designer-font-family').value,
         fontSize: readNumber('designer-font-size'),
+        autoFit: !document.getElementById('designer-font-size').value,
         align: document.getElementById('designer-align').value,
         frame: document.getElementById('designer-frame').checked,
         underline: document.getElementById('designer-underline').checked,
@@ -889,6 +895,45 @@
       }
     }
 
+    let textPreviewTimer = null;
+
+    async function updateTextPreview() {
+      const payload = getTextPayload();
+      const preview = document.getElementById('text-preview');
+      if (!payload.text || !String(payload.text).trim()) {
+        if (preview.dataset.url) {
+          URL.revokeObjectURL(preview.dataset.url);
+          delete preview.dataset.url;
+        }
+        preview.removeAttribute('src');
+        return;
+      }
+      try {
+        const response = await fetch('/api/preview/text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error('Vorschau fehlgeschlagen');
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        if (preview.dataset.url) {
+          URL.revokeObjectURL(preview.dataset.url);
+        }
+        preview.dataset.url = url;
+        preview.src = url;
+      } catch (error) {
+        preview.removeAttribute('src');
+      }
+    }
+
+    function scheduleTextPreview() {
+      window.clearTimeout(textPreviewTimer);
+      textPreviewTimer = window.setTimeout(updateTextPreview, 180);
+    }
+
     async function parseBatchFile(file) {
       const fileData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -949,9 +994,17 @@
       }
     });
 
+    ['text', 'text-template', 'text-tape', 'text-font-size', 'text-font-family', 'text-align', 'text-frame', 'text-underline']
+      .forEach((id) => {
+        const element = document.getElementById(id);
+        const eventName = element.tagName === 'TEXTAREA' || element.tagName === 'INPUT' ? 'input' : 'change';
+        element.addEventListener(eventName, scheduleTextPreview);
+      });
+
     window.addEventListener('DOMContentLoaded', async () => {
       await loadTemplates();
       await checkStatus();
+      scheduleTextPreview();
     });
   </script>
 </body>

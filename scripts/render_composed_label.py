@@ -373,23 +373,30 @@ def main():
     post_feed_mm = float(sys.argv[5]) if len(sys.argv) > 5 else 0.0
     content_width = to_px(content_mm)
     post_feed_width = to_px(post_feed_mm) if post_feed_mm > 0 else 0
-    width = content_width + post_feed_width
     height = CANVAS_HEIGHT
 
-    canvas = Image.new("1", (width, height), 1)
-    draw = ImageDraw.Draw(canvas)
-    apply_template_background(draw, payload.get("template"), content_width, height)
+    content_canvas = Image.new("1", (content_width, height), 1)
+    content_draw = ImageDraw.Draw(content_canvas)
+    apply_template_background(content_draw, payload.get("template"), content_width, height)
 
     for obj in payload.get("objects", []):
         kind = obj.get("type")
         if kind in {"text", "date", "time", "datetime", "counter"}:
-            draw_text_object(draw, canvas, obj, content_width, height)
+            draw_text_object(content_draw, content_canvas, obj, content_width, height)
         elif kind == "shape":
-            draw_shape(draw, obj, content_width, height)
+            draw_shape(content_draw, obj, content_width, height)
         elif kind == "image":
-            draw_image_object(canvas, obj, content_width, height)
+            draw_image_object(content_canvas, obj, content_width, height)
         elif kind in {"barcode", "qr"}:
-            draw_code_object(canvas, draw, obj, content_width, height)
+            draw_code_object(content_canvas, content_draw, obj, content_width, height)
+
+    if post_feed_width > 0:
+        # Prepend blank area so physical cut happens after content on printers
+        # that interpret image direction opposite to the UI layout.
+        canvas = Image.new("1", (content_width + post_feed_width, height), 1)
+        canvas.paste(content_canvas, (post_feed_width, 0))
+    else:
+        canvas = content_canvas
 
     canvas.save(out_path, format="PNG")
     return 0

@@ -38,7 +38,7 @@ def load_font(family, size):
     family = family or "sans-bold"
     path = FONT_MAP.get(family, FONT_MAP["sans-bold"])
     try:
-        return ImageFont.truetype(path, size=max(8, int(size)))
+        return ImageFont.truetype(path, size=max(1, int(size)))
     except OSError:
         return ImageFont.load_default()
 
@@ -48,7 +48,7 @@ def measure_text(draw, text, font):
     return bbox[2] - bbox[0], bbox[3] - bbox[1]
 
 
-def fit_text_font(draw, lines, family, target_size, box_w, box_h, padding, min_size=8):
+def fit_text_font(draw, lines, family, target_size, box_w, box_h, padding, min_size=4):
     size = max(min_size, int(target_size))
     while size >= min_size:
         font = load_font(family, size)
@@ -62,7 +62,7 @@ def fit_text_font(draw, lines, family, target_size, box_w, box_h, padding, min_s
             total_h += th
 
         total_h += max(0, len(lines) - 1) * spacing
-        if max_w <= max(1, box_w - 2 * padding) and total_h <= max(1, box_h - 2 * padding):
+        if max_w <= max(1, box_w - 2 * padding - 6) and total_h <= max(1, box_h - 2 * padding - 2):
             return font, spacing, max_w, total_h
 
         size -= 1
@@ -364,29 +364,32 @@ def apply_template_background(draw, template, width, height):
 
 def main():
     if len(sys.argv) < 5:
-        print("Usage: render_composed_label.py <output.png> <payload_json> <content_mm> <tape_mm>")
+        print("Usage: render_composed_label.py <output.png> <payload_json> <content_mm> <tape_mm> [post_feed_mm]")
         return 1
 
     out_path = sys.argv[1]
     payload = json.loads(sys.argv[2])
     content_mm = float(sys.argv[3])
-    width = to_px(content_mm)
+    post_feed_mm = float(sys.argv[5]) if len(sys.argv) > 5 else 0.0
+    content_width = to_px(content_mm)
+    post_feed_width = to_px(post_feed_mm) if post_feed_mm > 0 else 0
+    width = content_width + post_feed_width
     height = CANVAS_HEIGHT
 
     canvas = Image.new("1", (width, height), 1)
     draw = ImageDraw.Draw(canvas)
-    apply_template_background(draw, payload.get("template"), width, height)
+    apply_template_background(draw, payload.get("template"), content_width, height)
 
     for obj in payload.get("objects", []):
         kind = obj.get("type")
         if kind in {"text", "date", "time", "datetime", "counter"}:
-            draw_text_object(draw, canvas, obj, width, height)
+            draw_text_object(draw, canvas, obj, content_width, height)
         elif kind == "shape":
-            draw_shape(draw, obj, width, height)
+            draw_shape(draw, obj, content_width, height)
         elif kind == "image":
-            draw_image_object(canvas, obj, width, height)
+            draw_image_object(canvas, obj, content_width, height)
         elif kind in {"barcode", "qr"}:
-            draw_code_object(canvas, draw, obj, width, height)
+            draw_code_object(canvas, draw, obj, content_width, height)
 
     canvas.save(out_path, format="PNG")
     return 0

@@ -26,6 +26,7 @@ const TAPE_SIZE = process.env.DYMO_TAPE_SIZE || '12';
 const LEADING_BLANK_MM = Number(process.env.DYMO_LEADING_BLANK_MM || '12');
 const TOTAL_LABEL_MM = Number(process.env.DYMO_TOTAL_LABEL_MM || '40');
 const CONTENT_LABEL_MM = Math.max(10, TOTAL_LABEL_MM - LEADING_BLANK_MM);
+const POST_FEED_MM = Math.max(0, Number(process.env.DYMO_POST_FEED_MM || '20'));
 
 function execFileAsync(bin, args, timeout) {
   return new Promise((resolve, reject) => {
@@ -200,6 +201,7 @@ async function printComposition(payload, tapeSize = TAPE_SIZE) {
       JSON.stringify(payload),
       String(CONTENT_LABEL_MM),
       String(tapeSize),
+      String(POST_FEED_MM),
     ]);
 
     return await runDymoprint(['-t', String(tapeSize), '-m', '0', '-p', tempFile, '']);
@@ -217,6 +219,7 @@ async function renderCompositionPreview(payload, tapeSize = TAPE_SIZE) {
     JSON.stringify(payload),
     String(CONTENT_LABEL_MM),
     String(tapeSize),
+    '0',
   ]);
 
   return tempFile;

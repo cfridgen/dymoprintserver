@@ -68,15 +68,17 @@ router.post(
   body('text').isString().notEmpty().withMessage('text darf nicht leer sein'),
   body('tapeSize').optional().isInt({ min: 6, max: 24 }),
   body('fontSize').optional().isInt({ min: 6, max: 32 }),
+  body('postFeedMm').optional().isFloat({ min: 0, max: 60 }),
   async (req, res) => {
     const validErr = handleValidation(req, res);
     if (validErr !== null) return;
 
     try {
-      const { text, tapeSize, fontSize, fontFamily, align, frame, underline, template } = req.body;
+      const { text, tapeSize, fontSize, fontFamily, align, frame, underline, template, postFeedMm } = req.body;
       await dymo.printComposition(
         composer.buildTextPayload(text, { tapeSize, fontSize, fontFamily, align, frame, underline, template }),
-        tapeSize
+        tapeSize,
+        postFeedMm
       );
       res.json({ success: true, message: 'Label gedruckt' });
     } catch (err) {
@@ -125,15 +127,17 @@ router.post(
   body('qrContent').isString().notEmpty().withMessage('qrContent darf nicht leer sein'),
   body('label').optional().isString(),
   body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  body('postFeedMm').optional().isFloat({ min: 0, max: 60 }),
   async (req, res) => {
     const validErr = handleValidation(req, res);
     if (validErr !== null) return;
 
     try {
-      const { qrContent, label, tapeSize, template, qrMode } = req.body;
+      const { qrContent, label, tapeSize, template, qrMode, postFeedMm } = req.body;
       await dymo.printComposition(
         composer.buildQRPayload(qrContent, label, { tapeSize, template, qrMode }),
-        tapeSize
+        tapeSize,
+        postFeedMm
       );
       res.json({ success: true, message: 'QR-Label gedruckt' });
     } catch (err) {
@@ -149,15 +153,17 @@ router.post(
   body('barcodeValue').isString().notEmpty().withMessage('barcodeValue darf nicht leer sein'),
   body('label').optional().isString(),
   body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  body('postFeedMm').optional().isFloat({ min: 0, max: 60 }),
   async (req, res) => {
     const validErr = handleValidation(req, res);
     if (validErr !== null) return;
 
     try {
-      const { barcodeValue, label, tapeSize, symbology, showText, template } = req.body;
+      const { barcodeValue, label, tapeSize, symbology, showText, template, postFeedMm } = req.body;
       await dymo.printComposition(
         composer.buildBarcodePayload(barcodeValue, label, { tapeSize, symbology, showText, template }),
-        tapeSize
+        tapeSize,
+        postFeedMm
       );
       res.json({ success: true, message: 'Barcode-Label gedruckt' });
     } catch (err) {
@@ -171,13 +177,14 @@ router.post(
   body('payload').isObject().withMessage('payload muss ein Objekt sein'),
   body('payload.objects').isArray({ min: 1 }).withMessage('payload.objects muss mindestens ein Element enthalten'),
   body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  body('postFeedMm').optional().isFloat({ min: 0, max: 60 }),
   async (req, res) => {
     const validErr = handleValidation(req, res);
     if (validErr !== null) return;
 
     try {
-      const { payload, tapeSize } = req.body;
-      await dymo.printComposition(payload, tapeSize);
+      const { payload, tapeSize, postFeedMm } = req.body;
+      await dymo.printComposition(payload, tapeSize, postFeedMm);
       res.json({ success: true, message: 'Kompositions-Label gedruckt' });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -194,14 +201,15 @@ router.post(
   body('barcodeValue').optional().isString(),
   body('qrValue').optional().isString(),
   body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  body('postFeedMm').optional().isFloat({ min: 0, max: 60 }),
   async (req, res) => {
     const validErr = handleValidation(req, res);
     if (validErr !== null) return;
 
     try {
-      const { tapeSize } = req.body;
+      const { tapeSize, postFeedMm } = req.body;
       const payload = composer.buildDesignerPayload(req.body);
-      await dymo.printComposition(payload, tapeSize);
+      await dymo.printComposition(payload, tapeSize, postFeedMm);
       res.json({ success: true, message: 'Designer-Label gedruckt', payload });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -216,12 +224,13 @@ router.post(
   body('step').optional().isInt(),
   body('end').isInt(),
   body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  body('postFeedMm').optional().isFloat({ min: 0, max: 60 }),
   async (req, res) => {
     const validErr = handleValidation(req, res);
     if (validErr !== null) return;
 
     try {
-      const { start, step = 1, end, tapeSize } = req.body;
+      const { start, step = 1, end, tapeSize, postFeedMm } = req.body;
       let printed = 0;
 
       for (let current = Number(start); current <= Number(end); current += Number(step)) {
@@ -233,7 +242,7 @@ router.post(
           counterEnd: end,
           counterCurrent: current,
         });
-        await dymo.printComposition(payload, tapeSize);
+        await dymo.printComposition(payload, tapeSize, postFeedMm);
         printed += 1;
       }
 
@@ -250,12 +259,14 @@ router.post(
   body('mapping').isObject().withMessage('mapping muss ein Objekt sein'),
   body('defaults').isObject().withMessage('defaults muss ein Objekt sein'),
   body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  body('postFeedMm').optional().isFloat({ min: 0, max: 60 }),
   async (req, res) => {
     const validErr = handleValidation(req, res);
     if (validErr !== null) return;
 
     try {
       const tapeSize = Number(req.body.tapeSize) || undefined;
+      const postFeedMm = req.body.postFeedMm;
       let printed = 0;
 
       for (const row of req.body.rows) {
@@ -263,7 +274,7 @@ router.post(
           mapping: req.body.mapping,
           defaults: req.body.defaults,
         });
-        await dymo.printComposition(payload, tapeSize);
+        await dymo.printComposition(payload, tapeSize, postFeedMm);
         printed += 1;
       }
 

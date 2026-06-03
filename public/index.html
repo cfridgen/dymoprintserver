@@ -310,6 +310,42 @@
       box-shadow: inset 0 0 0 1px var(--accent);
     }
 
+    .advanced-toggle {
+      margin: 0 0 14px;
+      border: 1px dashed rgba(20, 17, 15, 0.2);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.55);
+      padding: 10px 12px;
+    }
+
+    .advanced-toggle summary {
+      cursor: pointer;
+      color: var(--muted);
+      font: 600 0.84rem/1.35 Arial, sans-serif;
+      letter-spacing: 0.02em;
+      user-select: none;
+    }
+
+    .advanced-toggle-inner {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .feed-controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .feed-value {
+      min-width: 56px;
+      text-align: right;
+      color: #3f3935;
+      font: 700 0.84rem/1.2 Arial, sans-serif;
+    }
+
     .toast {
       position: fixed;
       right: 18px;
@@ -390,6 +426,18 @@
       <button class="tab-btn" type="button" onclick="showTab(event, 'barcode')">Barcode</button>
       <button class="tab-btn" type="button" onclick="showTab(event, 'batch')">Batch</button>
     </nav>
+
+    <details class="advanced-toggle">
+      <summary>Sonderfunktion: Nachvorschub fein einstellen</summary>
+      <div class="advanced-toggle-inner">
+        <p class="small-note">Nur bei Bedarf aktivieren. Ohne Aktivierung bleibt der serverseitige Default aktiv.</p>
+        <label class="checkbox-row"><input id="post-feed-enabled" type="checkbox" /> Nachvorschub fuer Druckauftraege ueberschreiben</label>
+        <div class="feed-controls">
+          <input id="post-feed-mm" type="range" min="0" max="40" step="1" value="20" />
+          <span class="feed-value" id="post-feed-mm-value">20 mm</span>
+        </div>
+      </div>
+    </details>
 
     <section class="panel active" id="panel-designer">
       <div class="panel-head">
@@ -702,9 +750,11 @@
           dot.className = 'dot err';
           text.textContent = 'dymoprint nicht erreichbar: ' + (data.error || 'unbekannt');
         }
+        return data;
       } catch {
         document.getElementById('statusDot').className = 'dot err';
         document.getElementById('statusText').textContent = 'Server nicht erreichbar';
+        return null;
       }
     }
 
@@ -761,6 +811,18 @@
       return value === '' ? undefined : Number(value);
     }
 
+    function getPostFeedOverride() {
+      if (!document.getElementById('post-feed-enabled').checked) {
+        return undefined;
+      }
+      return readNumber('post-feed-mm');
+    }
+
+    function updatePostFeedLabel() {
+      const slider = document.getElementById('post-feed-mm');
+      document.getElementById('post-feed-mm-value').textContent = `${slider.value} mm`;
+    }
+
     function getTextPayload() {
       return {
         text: document.getElementById('text').value,
@@ -772,6 +834,7 @@
         frame: document.getElementById('text-frame').checked,
         underline: document.getElementById('text-underline').checked,
         autoFit: !document.getElementById('text-font-size').value,
+        postFeedMm: getPostFeedOverride(),
       };
     }
 
@@ -782,6 +845,7 @@
         label: document.getElementById('qr-label').value || undefined,
         template: document.getElementById('qr-template').value,
         tapeSize: readNumber('qr-tape'),
+        postFeedMm: getPostFeedOverride(),
       };
     }
 
@@ -793,12 +857,14 @@
         template: document.getElementById('barcode-template').value,
         tapeSize: readNumber('barcode-tape'),
         showText: document.getElementById('barcode-show-text').checked,
+        postFeedMm: getPostFeedOverride(),
       };
     }
 
     function getBatchPayload() {
       return {
         tapeSize: readNumber('batch-tape'),
+        postFeedMm: getPostFeedOverride(),
         rows: batchParsedRows,
         mapping: {
           text: document.getElementById('batch-text-column').value || undefined,
@@ -846,6 +912,7 @@
         qrMode: document.getElementById('designer-qr-mode').value,
         qrValue: document.getElementById('designer-qr-value').value || undefined,
         imageData: designerImageData || undefined,
+        postFeedMm: getPostFeedOverride(),
       };
     }
 
@@ -1001,9 +1068,16 @@
         element.addEventListener(eventName, scheduleTextPreview);
       });
 
+    document.getElementById('post-feed-mm').addEventListener('input', updatePostFeedLabel);
+
     window.addEventListener('DOMContentLoaded', async () => {
       await loadTemplates();
-      await checkStatus();
+      const statusData = await checkStatus();
+      if (statusData && Number.isFinite(Number(statusData.postFeedDefaultMm))) {
+        const slider = document.getElementById('post-feed-mm');
+        slider.value = Math.max(0, Math.min(40, Number(statusData.postFeedDefaultMm)));
+      }
+      updatePostFeedLabel();
       scheduleTextPreview();
     });
   </script>

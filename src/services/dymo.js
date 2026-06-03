@@ -28,6 +28,17 @@ const TOTAL_LABEL_MM = Number(process.env.DYMO_TOTAL_LABEL_MM || '40');
 const CONTENT_LABEL_MM = Math.max(10, TOTAL_LABEL_MM - LEADING_BLANK_MM);
 const POST_FEED_MM = Math.max(0, Number(process.env.DYMO_POST_FEED_MM || '20'));
 
+function normalizePostFeedMm(value) {
+  if (value === undefined || value === null || value === '') {
+    return POST_FEED_MM;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return POST_FEED_MM;
+  }
+  return Math.max(0, Math.min(60, parsed));
+}
+
 function execFileAsync(bin, args, timeout) {
   return new Promise((resolve, reject) => {
     execFile(bin, args, { timeout }, (error, stdout, stderr) => {
@@ -118,7 +129,8 @@ async function printText(text, opts = {}) {
         },
       ],
     },
-    tapeSize
+    tapeSize,
+    opts.postFeedMm
   );
 }
 
@@ -148,7 +160,8 @@ async function printQR(qrContent, label, opts = {}) {
         },
       ],
     },
-    tapeSize
+    tapeSize,
+    opts.postFeedMm
   );
 }
 
@@ -187,12 +200,14 @@ async function printBarcode(barcodeValue, label, opts = {}) {
         },
       ],
     },
-    tapeSize
+    tapeSize,
+    opts.postFeedMm
   );
 }
 
-async function printComposition(payload, tapeSize = TAPE_SIZE) {
+async function printComposition(payload, tapeSize = TAPE_SIZE, postFeedMm) {
   const tempFile = path.join(os.tmpdir(), `dymo-compose-${Date.now()}.png`);
+  const effectivePostFeedMm = normalizePostFeedMm(postFeedMm);
 
   try {
     await runPython([
@@ -201,7 +216,7 @@ async function printComposition(payload, tapeSize = TAPE_SIZE) {
       JSON.stringify(payload),
       String(CONTENT_LABEL_MM),
       String(tapeSize),
-      String(POST_FEED_MM),
+      String(effectivePostFeedMm),
     ]);
 
     return await runDymoprint(['-t', String(tapeSize), '-m', '0', '-p', tempFile, '']);
@@ -256,6 +271,7 @@ async function getStatus() {
         available: true,
         version: result.stdout.trim() || result.stderr.trim(),
         binary: result.bin,
+        postFeedDefaultMm: POST_FEED_MM,
       };
     } catch (failed) {
       lastErr = failed;
@@ -271,6 +287,7 @@ async function getStatus() {
     available: false,
     error: 'dymoprint nicht gefunden (lokal: .venv/bin/dymoprint oder systemweit).',
     detail: lastErr && lastErr.error ? lastErr.error.message : undefined,
+    postFeedDefaultMm: POST_FEED_MM,
   };
 }
 

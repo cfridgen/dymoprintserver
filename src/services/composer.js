@@ -121,7 +121,7 @@ function addOptionalDesignerObjects(payload, form = {}) {
       x: 6,
       y: form.template === 'warning' ? 24 : 10,
       w: form.barcodeValue || form.qrValue ? 52 : 88,
-      h: 38,
+      h: 76,
       fontFamily: form.fontFamily || 'sans-bold',
       fontSize: Number(form.fontSize) || 0,
       autoFit: !Number(form.fontSize),

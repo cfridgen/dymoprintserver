@@ -120,6 +120,36 @@ router.post(
   }
 );
 
+router.post(
+  '/preview/designer',
+  body('template').optional().isString(),
+  body('text').optional().isString(),
+  body('dynamicType').optional().isString(),
+  body('barcodeType').optional().isString(),
+  body('barcodeValue').optional().isString(),
+  body('qrValue').optional().isString(),
+  body('tapeSize').optional().isInt({ min: 6, max: 24 }),
+  async (req, res) => {
+    const validErr = handleValidation(req, res);
+    if (validErr !== null) return;
+
+    try {
+      const { tapeSize } = req.body;
+      const payload = composer.buildDesignerPayload(req.body);
+      const previewPath = await dymo.renderCompositionPreview(payload, tapeSize);
+      res.sendFile(previewPath, (err) => {
+        const fs = require('fs');
+        fs.unlink(previewPath, () => {});
+        if (err) {
+          console.error(err);
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+);
+
 // --- POST /api/print/qr ---
 // Body: { qrContent: "https://...", label: "Optionaler Text", tapeSize: 12 }
 router.post(

@@ -483,7 +483,12 @@
 
           <div class="field span-12">
             <label for="designer-text">Haupttext</label>
-            <textarea id="designer-text" placeholder="Artikelname&#10;Ort oder Zusatzzeile"></textarea>
+            <textarea id="designer-text" placeholder="Artikelname&#10;Ort oder Zusatzzeile">Test</textarea>
+          </div>
+
+          <div class="field span-12">
+            <label for="designer-preview">Vorschau</label>
+            <img id="designer-preview" alt="Designervorschau" style="width:100%;display:block;background:#fff;border:1px solid rgba(20,17,15,0.08);border-radius:16px;min-height:96px;object-fit:contain;" />
           </div>
 
           <div class="field span-3">
@@ -963,6 +968,7 @@
     }
 
     let textPreviewTimer = null;
+    let designerPreviewTimer = null;
 
     async function updateTextPreview() {
       const payload = getTextPayload();
@@ -996,9 +1002,38 @@
       }
     }
 
+    async function updateDesignerPreview() {
+      const payload = getDesignerPayload();
+      const preview = document.getElementById('designer-preview');
+      try {
+        const response = await fetch('/api/preview/designer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error('Vorschau fehlgeschlagen');
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        if (preview.dataset.url) {
+          URL.revokeObjectURL(preview.dataset.url);
+        }
+        preview.dataset.url = url;
+        preview.src = url;
+      } catch {
+        preview.removeAttribute('src');
+      }
+    }
+
     function scheduleTextPreview() {
       window.clearTimeout(textPreviewTimer);
       textPreviewTimer = window.setTimeout(updateTextPreview, 180);
+    }
+
+    function scheduleDesignerPreview() {
+      window.clearTimeout(designerPreviewTimer);
+      designerPreviewTimer = window.setTimeout(updateDesignerPreview, 180);
     }
 
     async function parseBatchFile(file) {
@@ -1068,6 +1103,12 @@
         element.addEventListener(eventName, scheduleTextPreview);
       });
 
+    ['designer-text']
+      .forEach((id) => {
+        const element = document.getElementById(id);
+        element.addEventListener('input', scheduleDesignerPreview);
+      });
+
     document.getElementById('post-feed-mm').addEventListener('input', updatePostFeedLabel);
 
     window.addEventListener('DOMContentLoaded', async () => {
@@ -1079,6 +1120,7 @@
       }
       updatePostFeedLabel();
       scheduleTextPreview();
+      scheduleDesignerPreview();
     });
   </script>
 </body>

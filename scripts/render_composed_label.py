@@ -163,8 +163,19 @@ def draw_text_object(draw, canvas, obj, width, height):
     size = int(obj.get("fontSize", 0) or 0)
     auto_fit = bool(obj.get("autoFit", size <= 0))
     lines = [line for line in resolve_dynamic_text(obj).split("\n") if line.strip()] or [" "]
+    single_line_fill_ratio = float(obj.get("singleLineFillRatio", 0) or 0)
+    desired_single_line_h = None
+    if len(lines) == 1 and single_line_fill_ratio > 0:
+        desired_single_line_h = min(
+            max(1, int(round(height * single_line_fill_ratio))),
+            max(1, h - 2 * padding),
+        )
+
     if auto_fit:
         target_size = int(obj.get("targetFontSize", 42) or 42)
+        if len(lines) == 1:
+            # For single-line labels, prefer using almost the full box height.
+            target_size = max(target_size, int((h - 2 * padding) * 2.2))
         font, spacing, _, total_h = fit_text_font(draw, lines, family, target_size, w, h, padding)
     else:
         font = load_font(family, size)
@@ -185,6 +196,11 @@ def draw_text_object(draw, canvas, obj, width, height):
         tw, th = measure_text(draw, line, font)
         metrics.append((line, tw, th))
 
+    if desired_single_line_h is not None and len(metrics) == 1:
+        line, tw, th = metrics[0]
+        if th > 0 and th < desired_single_line_h:
+            total_h = desired_single_line_h
+
     origin_y = y + max(padding, (h - total_h) // 2)
     text_fill = 1 if invert else 0
     for line, tw, th in metrics:
@@ -194,11 +210,28 @@ def draw_text_object(draw, canvas, obj, width, height):
             origin_x = x + w - tw - padding
         else:
             origin_x = x + max(padding, (w - tw) // 2)
-        draw.text((origin_x, origin_y), line, fill=text_fill, font=font)
+
+        render_h = th
+        if desired_single_line_h is not None and len(metrics) == 1 and th > 0 and desired_single_line_h > th:
+            bbox = draw.textbbox((0, 0), line, font=font)
+            bbox_w = max(1, bbox[2] - bbox[0])
+            bbox_h = max(1, bbox[3] - bbox[1])
+            mask = Image.new("L", (bbox_w, bbox_h), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            mask_draw.text((-bbox[0], -bbox[1]), line, fill=255, font=font)
+            stretched_mask = mask.resize((bbox_w, desired_single_line_h), Image.Resampling.BICUBIC)
+            stretch_x = x + max(padding, (w - bbox_w) // 2) if align == "center" else origin_x
+            if align == "right":
+                stretch_x = x + w - bbox_w - padding
+            canvas.paste(text_fill, (stretch_x, origin_y), stretched_mask)
+            render_h = desired_single_line_h
+        else:
+            draw.text((origin_x, origin_y), line, fill=text_fill, font=font)
+
         if underline:
-            uy = origin_y + th + 1
+            uy = origin_y + render_h + 1
             draw.line((origin_x, uy, origin_x + tw, uy), fill=text_fill, width=1)
-        origin_y += th + spacing
+        origin_y += render_h + spacing
 
 
 def build_vcard_payload(value):

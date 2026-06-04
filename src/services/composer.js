@@ -80,8 +80,9 @@ function buildTextPayload(text, options = {}) {
       border: Boolean(options.frame),
       underline: Boolean(options.underline),
       align: options.align || 'center',
-      y: template === 'warning' ? 28 : 12,
-      h: template === 'warning' ? 56 : 62,
+      y: template === 'warning' ? 28 : 2,
+      h: template === 'warning' ? 56 : 96,
+      singleLineFillRatio: template === 'warning' ? undefined : 0.8,
     })
   );
   return payload;
